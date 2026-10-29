@@ -1,0 +1,6 @@
+# Intel Macs: mediapipe 1.x ships macOS wheels for Apple Silicon only.
+mediapipe==0.10.21
+opencv-contrib-python>=4.10,<4.11
+numpy>=1.26,<2
+pyvirtualcam>=0.15,<1
+pygame>=2.6,<3

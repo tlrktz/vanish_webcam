@@ -14,6 +14,29 @@ If you like this project and want to support it, you can buy me a coffee through
 
 The published EXE may predate the Particles and Goku modes. To use them now, run the local scripts or rebuild the EXE from these sources.
 
+## Running on macOS
+
+Works on Apple Silicon and Intel Macs (macOS 11 or later).
+
+1. Install Python 3.10–3.13 if you don't have it: `brew install python@3.12` (or the installer from [python.org](https://www.python.org/downloads/macos/)). The Python that ships with Xcode is too old.
+2. Double-click `start_macos.command`, or run it from Terminal:
+
+   ```bash
+   ./start_macos.command                      # menu
+   ./start_macos.command --mode naruto        # skip the menu
+   ./start_macos.command --no-virtual-camera  # preview window only
+   ```
+
+   The first run creates `.venv-local/` and installs the dependencies (internet needed once). Intel Macs automatically use `requirements-macos-intel.txt`, because mediapipe 1.x has no Intel macOS build.
+3. The first time, macOS asks whether Terminal may use the camera. Click **OK**, then quit Terminal (`Cmd+Q`) and start the script again. If you clicked **Don't Allow**, turn Terminal on in **System Settings → Privacy & Security → Camera**.
+
+Troubleshooting:
+
+- **"start_macos.command can't be opened"** (downloaded as a ZIP rather than cloned): run `chmod +x start_macos.command` in Terminal, then right-click the file and choose **Open**.
+- **Wrong camera** (for example your iPhone via Continuity Camera): try `--camera 1`.
+- **Virtual camera for Zoom/Meet/FaceTime:** install [OBS Studio](https://obsproject.com/) 30 or later, open it once and click **Start Virtual Camera** so macOS installs the camera extension (approve it in System Settings if asked), then click **Stop Virtual Camera** and quit OBS. VanishCam then sends its output to **OBS Virtual Camera**; select that camera in the other app. Unity Capture is Windows-only.
+- `BUILD_WINDOWS.bat` and the `.bat` launchers are Windows-only; on macOS you run the script directly, no build step needed.
+
 ## Getting started
 
 1. Double-click `AVVIA_LOCALE.bat`.

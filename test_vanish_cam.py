@@ -222,3 +222,33 @@ class MultiViewTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class MacCameraTests(unittest.TestCase):
+    def test_macos_uses_avfoundation_and_waits_for_first_frame(self):
+        from unittest.mock import MagicMock, patch
+        import local_app.vanish_cam as app
+
+        capture = MagicMock()
+        capture.isOpened.return_value = True
+        capture.grab.side_effect = [False, False, True]
+        with patch.object(app.platform, "system", return_value="Darwin"), \
+                patch.object(app.cv2, "VideoCapture", return_value=capture) as video, \
+                patch.object(app.time, "sleep"):
+            self.assertIs(app.open_camera(0, 960, 540), capture)
+        video.assert_called_once_with(0, app.cv2.CAP_AVFOUNDATION)
+        self.assertEqual(capture.grab.call_count, 3)
+
+    def test_macos_without_frames_explains_camera_permission(self):
+        from unittest.mock import MagicMock, patch
+        import local_app.vanish_cam as app
+
+        capture = MagicMock()
+        capture.isOpened.return_value = True
+        capture.grab.return_value = False
+        with patch.object(app.platform, "system", return_value="Darwin"), \
+                patch.object(app.cv2, "VideoCapture", return_value=capture), \
+                patch.object(app.time, "sleep"):
+            with self.assertRaisesRegex(RuntimeError, "Privacy e sicurezza"):
+                app.open_camera(0, 960, 540)
+        capture.release.assert_called_once()

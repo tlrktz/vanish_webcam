@@ -167,13 +167,22 @@ def open_virtual_camera(args: argparse.Namespace, width: int, height: int):
             backend=args.virtual_backend, device=args.virtual_device,
         )
     except (ImportError, RuntimeError, OSError, ValueError) as error:
-        message = (
-            "Webcam virtuale non disponibile. Installa OBS Studio (con il driver "
-            "OBS Virtual Camera) oppure Unity Capture. Se usi OBS Virtual Camera, "
-            "ferma 'Avvia fotocamera virtuale' in OBS. "
-            "Avvia da AVVIA_LOCALE.bat per installare pyvirtualcam. "
-            f"Dettaglio: {error}"
-        )
+        if platform.system() == "Darwin":
+            message = (
+                "Webcam virtuale non disponibile. Installa OBS Studio 30 o successivo e "
+                "avvia una volta 'Avvia fotocamera virtuale' in OBS per installarne "
+                "l'estensione di sistema, poi fermala. "
+                "Avvia da start_macos.command per installare pyvirtualcam. "
+                f"Dettaglio: {error}"
+            )
+        else:
+            message = (
+                "Webcam virtuale non disponibile. Installa OBS Studio (con il driver "
+                "OBS Virtual Camera) oppure Unity Capture. Se usi OBS Virtual Camera, "
+                "ferma 'Avvia fotocamera virtuale' in OBS. "
+                "Avvia da AVVIA_LOCALE.bat per installare pyvirtualcam. "
+                f"Dettaglio: {error}"
+            )
         if args.virtual_camera is True or args.virtual_backend or args.virtual_device:
             raise RuntimeError(message) from error
         print(f"[Webcam] {message}\n[Webcam] Proseguo con l'anteprima locale.")
@@ -222,9 +231,20 @@ def download_models(mode: str = "normal") -> None:
             ) from error
 
 
+def camera_unavailable_message(index: int) -> str:
+    message = f"Webcam {index} non disponibile. Chiudi le altre app oppure prova --camera 1."
+    if platform.system() == "Darwin":
+        message += (
+            " Su macOS consenti l'accesso alla fotocamera al Terminale in "
+            "Impostazioni di Sistema > Privacy e sicurezza > Fotocamera, poi riavvia il Terminale."
+        )
+    return message
+
+
 def open_camera(index: int, width: int, height: int) -> cv2.VideoCapture:
-    if platform.system() == "Windows":
-        capture = cv2.VideoCapture(index, cv2.CAP_DSHOW)
+    preferred = {"Windows": cv2.CAP_DSHOW, "Darwin": cv2.CAP_AVFOUNDATION}.get(platform.system())
+    if preferred is not None:
+        capture = cv2.VideoCapture(index, preferred)
         if not capture.isOpened():
             capture.release()
             capture = cv2.VideoCapture(index)
@@ -232,13 +252,20 @@ def open_camera(index: int, width: int, height: int) -> cv2.VideoCapture:
         capture = cv2.VideoCapture(index)
 
     if not capture.isOpened():
-        raise RuntimeError(
-            f"Webcam {index} non disponibile. Chiudi le altre app oppure prova --camera 1."
-        )
+        raise RuntimeError(camera_unavailable_message(index))
 
     capture.set(cv2.CAP_PROP_FRAME_WIDTH, width)
     capture.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
     capture.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+    if platform.system() == "Darwin":
+        # AVFoundation can return empty frames for a moment after opening.
+        for _ in range(40):
+            if capture.grab():
+                break
+            time.sleep(0.05)
+        else:
+            capture.release()
+            raise RuntimeError(camera_unavailable_message(index))
     return capture
 
 
